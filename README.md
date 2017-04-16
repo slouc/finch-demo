@@ -6,7 +6,8 @@ This is a minimal finch server implementation running as a TwitterServer with ci
 
 Available endpoints:
 
-`GET /hello/world/{name}`
+`GET /hello/world/{name}`  
+
 `POST /post/stuff with body: { "stuff" : "whatever" }`
 
 ### Usage
