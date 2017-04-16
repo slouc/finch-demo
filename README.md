@@ -8,7 +8,7 @@ Available endpoints:
 
 `GET /hello/world/{name}`  
 
-`POST /post/stuff with body: { "stuff" : "whatever" }`
+`POST /post/stuff` with body: `{ "stuff" : "whatever" }`
 
 ### Usage
 
