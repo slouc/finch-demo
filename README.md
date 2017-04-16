@@ -1,9 +1,8 @@
 # Minimal finch REST API server 
-## (on top of finagle/TwitterServer)
 
 ### What is this?
 
-This is a minimal finch server implementation running on top of TwitterServer with circe encoding/decoding.
+This is a minimal finch server implementation running as a TwitterServer with circe encoding/decoding.
 
 Available endpoints:
 
