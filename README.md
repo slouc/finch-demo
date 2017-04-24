@@ -64,10 +64,40 @@ Type `A` that I mentioned before is the type we parameterize `Output` with, and 
     
 You might be wondering how exactly are we returning a JSON since we never even mentioned the word "json", we are just returning a `MyResponse`. Magic is in those two imports. They contain implicit conversions (powered by [circe](https://github.com/circe/circe)) that automatically construct a result in viable format. Some types (such as `Option[T]`) are contained inside those implicits, and some (such as `scalaz.Maybe[T]`, at least in the time of writing) are not. But even for those that are not, it's simple to build your own conversions. They are not in the scope of this text and you don't need them for now anyway, but let's just say that Finch documentation and [gitter channel](https://gitter.im/finagle/finch) should help you when you do get there (not to mention that Travis Brown supplied ridiculous amounts of Finch+Circe information on StackOverflow).
 
-So, to summarize - endpoint is a function whose input is a product of path/query/body function parameters and whose return value is `Endpoint[SomeResult]`, where `SomeResult` can be any type (most likely a string, an array/vector/list or a case class, all of which are automatically transformed to their JSON counterparts). A bit of terminology - we can say that Scala's String, Array/Seq and case class are *isomorphic* to JsString, JsArray and JsObject because we can go from one to the other and back without losing any information. 
+To summarize - endpoint is a function whose input is a product of path/query/body function parameters and whose return value is `Endpoint[SomeResult]`, where `SomeResult` can be any type (most likely a string, an array/vector/list or a case class, all of which are automatically transformed to their JSON counterparts). A bit of terminology - we can say that Scala's String, Array/Seq and case class are *isomorphic* to JsString, JsArray and JsObject because we can go from one to the other and back without losing any information. 
 
-So, each endpoint is constructed in two steps, first by providing an HList that describes the endpoint URL and parameter(s), and then by composing that with a function which describes what happens with the input parameters (if any) and constructs the result (the "body" of the endpoint function). Let's now see how to define a server.
+We can visualize the type transformations like this:
+
+    Request[AE] ------> AD ------> BD ------> Response[BE]
+
+where `AE` is "A Encoded" (e.g. JSON request body), `AD` is "A Decoded" (e.g. a corresponding case class), `BD` is "B Decoded" (result of applying the business logic to `AD`) and `BE` is the encoded version of `BD` (e.g. from case class to JSON).
+
+Each endpoint is constructed in two steps, first by providing an HList that describes the endpoint URL and parameter(s), and then by composing that with a function which describes what happens with the input parameters (if any) and constructs the result (the "body" of the endpoint function). 
+
+Let's now see how to define the server.
 
 ### Implementing the Server
 
-[TODO]
+Once you get the hang of working with endpoints, defining the basic implementation of a server is almost trivial (later on you will perhaps want to add various filters and stuff, but we're keeping it simple here).
+
+I said we will be working with coproducts later. This is exactly what our server will be - a coproduct of endpoints. It's like Schrödinger's cat; server is potentially all endpoints at the same time, but once you make the request it's actually materialized as just one of them. Well, kind of, but it's an interesting way of looking at it. When a request is made, each endpoint is probed until a match is found or the end has been reached. If some endpoint matches the request (e.g. request is `GET /foo/bar` and an endpoint `get("foo" :: "bar")` is matched), that endpoint is triggered and the search stops. If more than one endpoint matches the request, first one is chosen. It's just like the good old pattern matching.
+
+Here's a simple implementation of a server. Even though it's not necessary for a schoolbook example, in the real world you will want to extend the `TwitterServer` (this is the official [best practice](https://finagle.github.io/finch/best-practices.html#use-twitterserver)). Other than that, everything should be pretty straightforward. You will notice that the syntax for joining things into a coproduct is `:+:` (also known as the "space invader" operator).
+
+    object Server extends TwitterServer {
+
+      val api: Service[Request, Response] =
+        (Api.helloWorldEndpoint :+: Api.postStuffEndpoint)
+          .toService
+
+      def main(): Unit = {
+        val server = Http.server.serve(":8080", api)
+        onExit { server.close() }
+        Await.ready(adminHttpServer)
+      }
+      
+    }
+    
+
+
+
