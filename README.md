@@ -98,8 +98,6 @@ Let's now see how to define the server.
 
 ### Implementing the Server
 
-Once you get the hang of working with endpoints, defining the basic implementation of a server is almost trivial (later on you will perhaps want to add various filters and stuff, but we're keeping it simple here).
-
 I said we will be working with coproducts later. This is exactly what our server will be - a coproduct of endpoints. It's like Schrödinger's cat; server is potentially all endpoints at the same time, but once you make the request it's actually materialized as just one of them. Well, kind of, but it's an interesting way of looking at it. When a request is made, each endpoint is probed until a match is found or the end has been reached. If some endpoint matches the request (e.g. request is `GET /foo/bar` and an endpoint `get("foo" :: "bar")` is matched), that endpoint is triggered and the search stops. If more than one endpoint matches the request, first one is chosen. It's just like the good old pattern matching.
 
 Here's a simple implementation of a server. Even though it's not necessary for a schoolbook example, in the real world you will want to extend the `TwitterServer` (this is the official [best practice](https://finagle.github.io/finch/best-practices.html#use-twitterserver)). Other than that, everything should be pretty straightforward. You will notice that the syntax for joining things into a coproduct is `:+:` (also known as the "space invader" operator).
@@ -125,6 +123,7 @@ Here's a simple implementation of a server. Even though it's not necessary for a
       
     }
     
+As you can see, once you get the hang of working with endpoints, defining the basic implementation of a server is almost trivial. Later on you will perhaps want to add various filters and stats receivers and stuff, but for a simple demonstration this is enough.
 
 
 
