@@ -51,8 +51,9 @@ Here's how to provide our functions with bodies:
     
 Type `A` that I mentioned before is the type we parameterize `Output` with, and therefore the type of result. In the previous example it was a simple String. Now let's return a JSON:
 
-    import io.circe.generic.auto._
+    import io.finch._
     import io.finch.circe._
+    import io.circe.generic.auto._
 
     case class MyResponse(code: Int, msg: String)
 
@@ -62,12 +63,13 @@ Type `A` that I mentioned before is the type we parameterize `Output` with, and 
          Ok(Response(200, "This is a response!"))
     }
     
-You might be wondering how exactly are we returning a JSON since we never even mentioned the word "json", we are just returning a `MyResponse`. Magic is in those two imports. They contain implicit conversions (powered by [circe](https://github.com/circe/circe)) that automatically construct a result in viable format. 
+You might be wondering how exactly are we returning a JSON since we never even mentioned the word "json", we are just returning a `MyResponse`. Magic is in those two extra imports. They contain implicit conversions (powered by [circe](https://github.com/circe/circe)) that automatically construct a result in viable format. 
 
 Let's get even more sophisticated:
 
-    import io.circe.generic.auto._
+    import io.finch._
     import io.finch.circe._
+    import io.circe.generic.auto._
 
     case class FancyResponse[T: io.circe.Encoder](code: Int, msg: String, body: T)
     case class FancyResponseBody(msg: String)
@@ -102,10 +104,17 @@ I said we will be working with coproducts later. This is exactly what our server
 
 Here's a simple implementation of a server. Even though it's not necessary for a schoolbook example, in the real world you will want to extend the `TwitterServer` (this is the official [best practice](https://finagle.github.io/finch/best-practices.html#use-twitterserver)). Other than that, everything should be pretty straightforward. You will notice that the syntax for joining things into a coproduct is `:+:` (also known as the "space invader" operator).
 
+    import com.twitter.finagle.http.{Request, Response}
+    import com.twitter.server._
+    import com.twitter.finagle.{Http, Service}
+    import com.twitter.util.Await
+    import io.circe.generic.auto._
+    import io.finch.circe._
+
     object Server extends TwitterServer {
 
       val api: Service[Request, Response] =
-        (Api.endpoint1 :+: Api.endpoint2 :+: Api.endpoint3 :+: Api.endpoint4)
+        (endpoint1 :+: endpoint2 :+: endpoint3 :+: endpoint4)
           .toService
 
       def main(): Unit = {
