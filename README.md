@@ -44,9 +44,9 @@ Here's how to provide our functions with bodies:
     }
     
     val endpoint2 = post("books" :: jsonBody[Book]) {
-      (body: Book) => 
+      (book: Book) => 
         // do something and return Output
-        Ok(s"You posted a book with title: $title and author: $author")
+        Ok(s"You posted a book with title: ${book.title} and author: ${book.author}")
     }
     
 Type `A` that I mentioned before is the type we parameterize `Output` with, and therefore the type of result. In the previous example it was a simple String. Now let's return a JSON:
@@ -56,13 +56,31 @@ Type `A` that I mentioned before is the type we parameterize `Output` with, and 
 
     case class MyResponse(code: Int, msg: String)
 
-    val endpoint = post("books" :: jsonBody[Book]) {
-      (body: Book) => 
+    val endpoint3 = post("books" :: jsonBody[Book]) {
+      (book: Book) => 
         // do something and return Output
-         Ok(Response(200, "This is one fancy response!"))
+         Ok(Response(200, "This is a response!"))
     }
     
-You might be wondering how exactly are we returning a JSON since we never even mentioned the word "json", we are just returning a `MyResponse`. Magic is in those two imports. They contain implicit conversions (powered by [circe](https://github.com/circe/circe)) that automatically construct a result in viable format. Some types (such as `Option[T]`) are contained inside those implicits, and some (such as `scalaz.Maybe[T]`, at least in the time of writing) are not. But even for those that are not, it's simple to build your own conversions. They are not in the scope of this text and you don't need them for now anyway, but let's just say that Finch documentation and [gitter channel](https://gitter.im/finagle/finch) should help you when you do get there (not to mention that Travis Brown supplied ridiculous amounts of Finch+Circe information on StackOverflow).
+You might be wondering how exactly are we returning a JSON since we never even mentioned the word "json", we are just returning a `MyResponse`. Magic is in those two imports. They contain implicit conversions (powered by [circe](https://github.com/circe/circe)) that automatically construct a result in viable format. 
+
+Let's get even more sophisticated:
+
+    import io.circe.generic.auto._
+    import io.finch.circe._
+
+    case class FancyResponse[T: io.circe.Encoder](code: Int, msg: String, body: T)
+    case class FancyResponseBody(msg: String)
+
+    val endpoint4 = post("books" :: "fancy" :: jsonBody[Book]) {
+      (book: Book) =>
+        // do something and return Output
+        Ok(FancyResponse(200, "This is one fancy response!", FancyResponseBody("response")))
+    }
+
+Here in `FancyResponse` we have a generic type `T`. Having just `T` as a type parameter would not satisfy the compiler since there is no information about the type so there's no guarantee that Finch will know how to encode it into some output type such as JSON. But by declaring the type as `[T: io.circe.Encoder]` we are saying that implicit implementation of Encoder typeclass must exist in scope for the given T. When we later on use `FancyResponseBody` in place of `T`, compiler is happy because there indeed exists a needed typeclass instance (it's in the imports). 
+
+Some types (such as `Option[T]`) are contained inside the imports, and some (such as `scalaz.Maybe[T]`, at least in the time of writing) are not. But even for those that are not, it's simple to build your own conversions. They are not in the scope of this text and you don't need them for now anyway, but let's just say that Finch documentation and [gitter channel](https://gitter.im/finagle/finch) should help you when you do get there (not to mention that Travis Brown supplied ridiculous amounts of Finch+Circe information on StackOverflow).
 
 To summarize - endpoint is a function whose input is a product of path/query/body function parameters and whose return value is `Endpoint[SomeResult]`, where `SomeResult` can be any type (most likely a string, an array/vector/list or a case class, all of which are automatically transformed to their JSON counterparts). A bit of terminology - we can say that Scala's String, Array/Seq and case class are *isomorphic* to JsString, JsArray and JsObject because we can go from one to the other and back without losing any information. 
 
@@ -87,7 +105,7 @@ Here's a simple implementation of a server. Even though it's not necessary for a
     object Server extends TwitterServer {
 
       val api: Service[Request, Response] =
-        (Api.helloWorldEndpoint :+: Api.postStuffEndpoint)
+        (Api.endpoint1 :+: Api.endpoint2 :+: Api.endpoint3 :+: Api.endpoint4)
           .toService
 
       def main(): Unit = {
