@@ -6,25 +6,36 @@ import io.finch.circe._
 
 object Api {
 
-  val helloWorldEndpoint: Endpoint[Response[HelloWorldResponse]] = get("hello" :: "world" :: string) {
-    (s: String) => {
-      // some logic
-      Ok(Response(200, "", HelloWorldResponse(s"hello, $s!")))
-    }
+  val endpoint1: Endpoint[String] = get("books" :: string :: param("minPrice") :: paramOption("maxPrice")) {
+    (s: String, minPrice: String, maxPrice: Option[String]) =>
+      // do something and return Output
+      Ok(s"Cool request bro! Here are the params: $s, $minPrice" + maxPrice.getOrElse(s" and $maxPrice", ""))
   }
-  val postStuffEndpoint: Endpoint[Response[PostStuffResponse]] = post("post" :: "stuff" :: jsonBody[PostStuffRequest]) {
-    (psr: PostStuffRequest) => {
-      // some logic
-      Ok(Response(200, "", PostStuffResponse(s"hello, ${psr.stuff}!")))
-    }
+
+  val endpoint2: Endpoint[String] = post("books" :: jsonBody[Book]) {
+    (book: Book) =>
+      // do something and return Output
+      Ok(s"You posted a book with title: ${book.title} and author: ${book.author}")
+  }
+
+  val endpoint3: Endpoint[MyResponse] = post("books" :: jsonBody[Book]) {
+    (book: Book) =>
+      // do something and return Output
+      Ok(MyResponse(200, "This is a response!"))
+  }
+
+  val endpoint4: Endpoint[FancyResponse[FancyResponseBody]] = post("books" :: "fancy" :: jsonBody[Book]) {
+    (book: Book) =>
+      // do something and return Output
+      Ok(FancyResponse(200, "This is one fancy response!", FancyResponseBody("response")))
   }
 
 }
 
-case class Response[T: io.circe.Encoder : io.circe.Decoder](code: Int, msg: String, body: T)
+case class Book(title: String, author: String)
 
-case class HelloWorldResponse(name: String)
+case class MyResponse(code: Int, msg: String)
 
-case class PostStuffRequest(stuff: String)
+case class FancyResponse[T: io.circe.Encoder](code: Int, msg: String, body: T)
 
-case class PostStuffResponse(stuff: String)
+case class FancyResponseBody(msg: String)
