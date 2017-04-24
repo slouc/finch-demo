@@ -1,6 +1,6 @@
-# Simple REST API server with finch
+# Simple REST API server with Finch
 
-### What is finch?
+### What is Finch?
 
 Let's start by quoting the [official GitHub page](https://github.com/finagle/finch): "Finch is a thin layer of purely functional basic blocks atop of Finagle for building composable HTTP APIs". That's a beautiful definition because it's both concise and complete; while Twitter's Finagle is the raw machinery under the hood that deals with RPCs, protocols, concurrency, connection pools, load balancers and things like that, Finch is a thin layer of composable abstract stuff on top of all that machinery.
 
