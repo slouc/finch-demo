@@ -125,5 +125,9 @@ Here's a simple implementation of a server. Even though it's not necessary for a
     
 As you can see, once you get the hang of working with endpoints, defining the basic implementation of a server is almost trivial. Later on you will perhaps want to add various filters and stats receivers and stuff, but for a simple demonstration this is enough.
 
+### Error handling
+
+[TODO]
+
 
 
