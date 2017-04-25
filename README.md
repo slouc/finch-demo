@@ -60,7 +60,7 @@ Type `A` that I mentioned before is the type we parameterize `Output` with, and 
     val endpoint3 = post("books" :: "json" :: jsonBody[Book]) {
       (book: Book) => 
         // do something and return Output
-         Ok(Response(200, "This is a response!"))
+         Ok(MyResponse(200, "This is a response!"))
     }
     
 You might be wondering how exactly are we returning a JSON since we never even mentioned the word "json", we are just returning a `MyResponse`. Magic is in those two extra imports. They contain implicit conversions (powered by [circe](https://github.com/circe/circe)) that automatically construct a result in viable format. 
