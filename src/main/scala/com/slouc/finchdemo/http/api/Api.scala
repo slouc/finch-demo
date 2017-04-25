@@ -1,5 +1,7 @@
 package com.slouc.finchdemo.http.api
 
+import com.twitter.finagle.http.Status
+import com.twitter.util.Future
 import io.finch._
 import io.circe.generic.auto._
 import io.finch.circe._
@@ -18,10 +20,12 @@ object Api {
       Ok(s"You posted a book with title: ${book.title} and author: ${book.author}")
   }
 
-  val endpoint3: Endpoint[MyResponse] = post("books" :: jsonBody[Book]) {
+  val endpoint3: Endpoint[MyResponse] = post("books" :: "json" :: jsonBody[Book]) {
     (book: Book) =>
       // do something and return Output
       Ok(MyResponse(200, "This is a response!"))
+  }.rescue {
+    case (t: Throwable) => Future(Output.payload(MyResponse(400, "Not cool dude!"), Status.BadRequest))
   }
 
   val endpoint4: Endpoint[FancyResponse[FancyResponseBody]] = post("books" :: "fancy" :: jsonBody[Book]) {
