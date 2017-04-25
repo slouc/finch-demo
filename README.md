@@ -57,7 +57,7 @@ Type `A` that I mentioned before is the type we parameterize `Output` with, and 
 
     case class MyResponse(code: Int, msg: String)
 
-    val endpoint3 = post("books" :: jsonBody[Book]) {
+    val endpoint3 = post("books" :: "json" :: jsonBody[Book]) {
       (book: Book) => 
         // do something and return Output
          Ok(Response(200, "This is a response!"))
@@ -83,6 +83,20 @@ Let's get even more sophisticated:
 Here in `FancyResponse` we have a generic type `T`. Having just `T` as a type parameter would not satisfy the compiler since there is no information about the type so there's no guarantee that Finch will know how to encode it into some output type such as JSON. But by declaring the type as `[T: io.circe.Encoder]` we are saying that implicit implementation of Encoder typeclass must exist in scope for the given T. When we later on use `FancyResponseBody` in place of `T`, compiler is happy because there indeed exists a needed typeclass instance (it's in the imports). 
 
 Some types (such as `Option[T]`) are contained inside the imports, and some (such as `scalaz.Maybe[T]`, at least in the time of writing) are not. But even for those that are not, it's simple to build your own conversions. They are not in the scope of this text and you don't need them for now anyway, but let's just say that Finch documentation and [gitter channel](https://gitter.im/finagle/finch) should help you when you do get there (not to mention that Travis Brown supplied ridiculous amounts of Finch+Circe information on StackOverflow).
+
+What about errors? Everyone knows how to handle their errors in business logic, wrap things into a bunch of disjunctions similar coproducts and eventually return some error HTTP response, so I'm not going to go into that, but what if e.g. request body can't even be decoded into our desired case class (which means that things broke somewhere inside Finch/Circe)? 
+
+Answer is the `rescue` method. Let's add it to e.g. `endpoint3`:
+
+    val endpoint3: Endpoint[MyResponse] = post("books" :: "json" :: jsonBody[Book]) {
+      (book: Book) =>
+        // do something and return Output
+        Ok(MyResponse(200, "This is a response!"))
+    }.rescue {
+      case (t: Throwable) => Future(Output.payload(MyResponse(400, "Not cool dude!"), Status.BadRequest))
+    }
+    
+Now posting some random JSON request body to `/books/json` results in `{"code":400,"msg":"Not cool dude!"}`. Not that the default message Finch would have given you is bad or anything; it would be something like "*{"message":"body cannot be converted to Book: Attempt to decode value on failed cursor: DownField(title)."}*". But if you want to handle this error case yourself, `rescue` is how you can do it.
 
 To summarize - endpoint is a function whose input is a product of path/query/body function parameters and whose return value is `Endpoint[SomeResult]`, where `SomeResult` can be any type (most likely a string, an array/vector/list or a case class, all of which are automatically transformed to their JSON counterparts). A bit of terminology - we can say that Scala's String, Array/Seq and case class are *isomorphic* to JsString, JsArray and JsObject because we can go from one to the other and back without losing any information. 
 
@@ -124,10 +138,3 @@ Here's a simple implementation of a server. Even though it's not necessary for a
     }
     
 As you can see, once you get the hang of working with endpoints, defining the basic implementation of a server is almost trivial. Later on you will perhaps want to add various filters and stats receivers and stuff, but for a simple demonstration this is enough.
-
-### Error handling
-
-[TODO]
-
-
-
