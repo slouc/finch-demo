@@ -2,13 +2,13 @@
 
 ### What is Finch?
 
-Let's start by quoting the [official GitHub page](https://github.com/finagle/finch): "Finch is a thin layer of purely functional basic blocks atop of Finagle for building composable HTTP APIs". That's a beautiful definition because it's both concise and complete; while Twitter's Finagle is the raw machinery under the hood that deals with RPCs, protocols, concurrency, connection pools, load balancers and things like that, Finch is a thin layer of composable abstract stuff on top of all that machinery.
+Let's start by quoting the [official GitHub page](https://github.com/finagle/finch): "Finch is a thin layer of purely functional basic blocks atop of Finagle for building composable HTTP APIs". That's a beautiful definition because it's both concise and complete; while Twitter's Finagle is the raw machinery under the hood that deals with RPCs, protocols, concurrency, connection pools, load balancers and things like that, Finch is a thin layer of composable abstract stuff on top of all that.
 
 Finagle's mantra is: *server is a function*. That makes sense; when we abstract it out and forget about the mechanical parts, it really comes down to a simple `Req => Future[Rep]` (note that this is Twitter's Future). Of course, we can't simply "forget" about the mechanical parts, but we can at least move them away from the abstract part. And that's exactly what Finagle does - it separates the netty-powered engine from the functional, composable, type-safe abstractions that live on top of it. And Finch takes that part a bit futher.
 
 ### Working with Endpoints
 
-Basic building block in Finch is the `Endpoint`. Again, this is a function, this time `Input => EndpointResult[A]`, where `A` denotes the type of result (we'll get back to this type soon). Note that you're most likely not going to be constructing the `EndpointResult` yourself. I guess it's best explained with an example. 
+Basic building block in Finch is the `Endpoint`. Again, this is a function, this time `Input => EndpointResult[A]`, where `A` denotes the type of result (we'll get back to this type soon). You're most likely not going to be constructing the `EndpointResult` yourself, but more about that later. First, an example. 
 
 Here's a basic endpoint:
 
