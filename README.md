@@ -84,6 +84,21 @@ Here in `FancyResponse` we have a generic type `T`. Having just `T` as a type pa
 
 Some types (such as `Option[T]`) are contained inside the imports, and some (such as `scalaz.Maybe[T]`, at least in the time of writing) are not. But even for those that are not, it's simple to build your own conversions. They are not in the scope of this text and you don't need them for now anyway, but let's just say that Finch documentation and [gitter channel](https://gitter.im/finagle/finch) should help you when you do get there (not to mention that Travis Brown supplied ridiculous amounts of Finch+Circe information on StackOverflow).
 
+### Non-blocking
+
+Instead of returning `Ok(foo)` from an endpoint, you're also free to return a (Twitter) Future: `Future(Ok(foo))`. Of course, simply wrapping your return value into a `Future` won't do much; it will just kick off the asynchronous computation which returns `foo` (and using `Future.value` won't even kick off a separate computation, but instantly produce a value wrapped into the `Future`). But if you have a scenario where you, for example, need to talk to the database which returns a `Future`, you can have the full pipeline without any blocking. (note: In case you're working with standard Future or scalaz/monix Task or something like that, you will have to eventually turn those into a Twitter Future)
+
+Asynchronous side of the story is clearly visible in the Finch code:
+
+    
+    implicit def mapperFromOutputFunction[A, B](f: A => Output[B]): Mapper.Aux[A, B] = ...
+    ...
+    implicit def mapperFromFutureOutputFunction[A, B](f: A => Future[Output[B]]): Mapper.Aux[A, B] = ...
+
+Programming in an async, non-blocking way is not the scope of this project, and it's definitely not specific to Finch. Any event-driven framework (such as NodeJS or Play) follows the same philosphy. I just wanted to point out that the principle is very similar (e.g. in Play you also have the option to return Future as a response, but not the Twitter one).
+
+### Error handling
+
 What about errors? Everyone knows how to handle their errors in business logic, wrap things into a bunch of disjunctions similar coproducts and eventually return some error HTTP response, so I'm not going to go into that, but what if e.g. request body can't even be decoded into our desired case class (which means that things broke somewhere inside Finch/Circe)? 
 
 Answer is the `rescue` method. Let's add it to e.g. `endpoint3`:
