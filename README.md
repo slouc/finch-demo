@@ -86,16 +86,43 @@ Some types (such as `Option[T]`) are contained inside the imports, and some (suc
 
 ### Non-blocking
 
-Instead of returning `Ok(foo)` from an endpoint, you're also free to return a (Twitter) Future: `Future(Ok(foo))`. Of course, simply wrapping your return value into a `Future` won't do much; it will just kick off the asynchronous computation which returns `foo` (and using `Future.value` won't even kick off a separate computation, but instantly produce a value wrapped into the `Future`). But if you have a scenario where you, for example, need to talk to the database which returns a `Future`, you can have the full pipeline without any blocking. (note: In case you're working with standard Future or scalaz/monix Task or something like that, you will have to eventually turn those into a Twitter Future)
+Instead of returning `Ok(foo)` from an endpoint, you're also free to return a (Twitter) Future: `Future(Ok(foo))`. 
 
-Asynchronous side of the story is clearly visible in the Finch code:
+Asynchronous alternative is clearly visible in the Finch code:
 
     
     implicit def mapperFromOutputFunction[A, B](f: A => Output[B]): Mapper.Aux[A, B] = ...
     ...
     implicit def mapperFromFutureOutputFunction[A, B](f: A => Future[Output[B]]): Mapper.Aux[A, B] = ...
 
-Programming in an async, non-blocking way is not the scope of this project, and it's definitely not specific to Finch. Any event-driven framework (such as NodeJS or Play) follows the same philosphy. I just wanted to point out that the principle is very similar (e.g. in Play you also have the option to return Future as a response, but not the Twitter one).
+So basically this would work:
+
+    import com.twitter.util.Future
+
+    val endpoint4 = post("books" :: "fancy" :: jsonBody[Book]) {
+      (book: Book) =>
+        // do something and return Output
+        Future(Ok(FancyResponse(200, "This is one fancy response!", FancyResponseBody("response"))))
+    }
+
+Instead of just wrapping our response (or any computation that results in a response) with a `Future`, which is kind of "blind" way of doing it, it's better to wrap it with a `FuturePool`:
+
+    import com.twitter.util.FuturePool
+
+    val endpoint4 = post("books" :: "fancy" :: jsonBody[Book]) {
+      (book: Book) =>
+        // do something and return Output
+        FuturePool.unboundedPool(Ok(FancyResponse(200, "This is one fancy response!", FancyResponseBody("response"))))
+    }
+
+Unbounded pool is not that great either, since our application may use too much resources. `FuturePool` can be configured to use any number of threads, and some other parameters may be set as well. You can instantiate the `FuturePool` with Java executors, e.g.:
+
+    FuturePool(Executors.newCachedThreadPool())
+    
+(executors are out of scope of this project; you'll find a bunch of info online)
+
+There is not much point to wrapping the output in the way we do it in our simple example, but in real use cases you may have heavy computations that calculate the end result and put it in the output. In this case, it is highly recommended to use the `FuturePool` to make your request serving asynchronous. Of course, heavy computations are not the only scenario in which asynchronous handling is needed; for example, your business logic may have to communicate with the database, other APIs etc. If these operations give you a standard `Future` instead of the Twitter one (or scalaz `Task`, monix `Task` or something like that), you will have to eventually turn those into a Twitter `Future`.
+
 
 ### Error handling
 
