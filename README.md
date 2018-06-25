@@ -126,7 +126,7 @@ There is not much point to wrapping the output in the way we do it in our simple
 
 ### Error handling
 
-What about errors? Everyone knows how to handle their errors in business logic, wrap things into a bunch of disjunctions similar coproducts and eventually return some error HTTP response, so I'm not going to go into that, but what if e.g. request body can't even be decoded into our desired case class (which means that things broke somewhere inside Finch/Circe)? 
+What about errors? Everyone knows how to handle their errors in business logic, wrap things into a bunch of disjunctions (or similar coproducts) and eventually return some error HTTP response, so I'm not going to go into that. But what if e.g. request body can't even be decoded into our desired case class (which means that things broke somewhere inside Finch/Circe)? 
 
 Answer is the `rescue` method. Let's add it to e.g. `endpoint3`:
 
